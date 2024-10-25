@@ -1,3 +1,31 @@
+NEW STEPS - ANNA
+to run:
+   - mkdir build
+   - cd build
+   - cmake ..      #this reads cmakelists.txt from root directory (..) and generates the necessary files for the build system
+   - cmake --build .        #builds the project 
+   - .\RecipeManagerExecutable       #run the executable 
+
+
+changes made: 
+   - removed all classes from finalcode.cpp (changed name to main.cpp)
+   - remodeled the structure of the project (src, include, json(files for nlohmann_json), data)
+   - wrote the correct paths of internal files in the project into the src files
+   - wrote CMakeLists.txt & gitignore files
+   - ensured there are standards that both our computers can use, please test this
+
+notes: 
+   - CMakeCache.txt, cmake_install.cmake, etc are automatically created and included in gitignore
+   - cmake-build-debug & CMakeFiles folders are created when you run cmake .., do not delete them but they will be included in the gitignore. If you for some reason delete build, delete these too then. 
+   - .vscode is needed for yall to run on mac/vs code. the .idea folder is generated automatically for jetbrains (clion), so its in the gitignore
+   - .gitmodules is tracking our submodule (json folder) which holds our nlohmann_json package. DO NOT put in gitignore.
+
+future updates/comments
+   - we need basic error handling for catching issues in recipemanager.cpp. If something fails in this file, we need to know where and if it was failing due to an external .h file
+   - be mindful of your automatically generated files for macos/vscode/clang. Check which ones should be in gitignore
+   - leave VC to github commits. No more repeat files. This will not work on CMake or in general
+
+
 # CompProgramming-2-Project-
 
 ## Table of Contents
@@ -54,7 +82,7 @@ To install and run the Recipe Manager locally:
    ```
 3. Compile the program using the provided `finalcode.cpp`:
    ```bash
-   g++ -std=c++11 finalcode.cpp -o finalcode
+   g++ -std=c++11 main.cpp -o finalcode
    ```
 4. Ensure that the required JSON files (`storage.json`, `recipes.json`, and `history.json`) are in the same directory as the executable.
 5. Run the program:
@@ -270,3 +298,5 @@ Done by India except `menu` and `viewRecipeHistory` which were done by Aya
 #### **Testing:**
 ##### **Unit Testing** 
 Done By Makenna
+
+

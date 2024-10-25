@@ -1,12 +1,19 @@
-#include "RecipeManager.h"
+#include "../include/RecipeManager.h"
+#include "../include/Fridge.h"
+#include "../include/Pantry.h"
+#include "../include/Recipe.h"
+#include "../include/Ingredient.h"
+
+using json = nlohmann::json;
 
 RecipeManager::RecipeManager(const std::string& recipeFilename) {
     recipes = loadRecipesFromJSON(recipeFilename);
-    loadIngredientsFromFile("storage.json");
+    loadIngredientsFromFile("../data/storage.json");
 }
 
+
 void RecipeManager::saveHistory(const Recipe& recipe) {
-    std::ifstream infile("history.json");
+    std::ifstream infile("../data/history.json");
     json history;
 
     if (infile.is_open() && infile.peek() != std::ifstream::traits_type::eof()) {
@@ -27,12 +34,41 @@ void RecipeManager::saveHistory(const Recipe& recipe) {
     
     history.push_back(j);
 
-    std::ofstream outfile("history.json");
+    std::ofstream outfile("../data/history.json");
     if (outfile.is_open()) {
         outfile << history.dump(4);
         outfile.close();
     }
 }
+
+void RecipeManager::displayFullRecipe(const Recipe& recipe) {
+    std::cout << "Recipe: " << recipe.getRecipeName() << "\n";
+    std::cout << "Ingredients:\n";
+    for (const auto& ingredient : recipe.getRequiredIngredients()) {
+        std::cout << "- " << ingredient.first << ": " << ingredient.second << "\n";
+    }
+
+    std::cout << "Steps:\n";
+    for (const auto& step : recipe.getSteps()) {
+        std::cout << "- " << step << "\n";
+    }
+}
+
+void RecipeManager::saveIngredientsToFile(const std::string& filename) {
+    json j;
+    j["Fridge"] = fridge.toJSON();
+    j["Pantry"] = pantry.toJSON();
+
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        file << j.dump(4);
+        file.close();
+        std::cout << "Ingredients saved to " << filename << "\n";
+    } else {
+        std::cerr << "Unable to open file " << filename << "\n";
+    }
+}
+
 
 void RecipeManager::loadIngredientsFromFile(const std::string& filename) {
     std::ifstream file(filename);
@@ -86,7 +122,7 @@ void RecipeManager::collectIngredients() {
             continue;
         }
 
-        saveIngredientsToFile("storage.json");
+        saveIngredientsToFile("../data/storage.json");
     }
 }
 
@@ -176,40 +212,13 @@ void RecipeManager::matchRecipes() {
     }
 }
 
-void RecipeManager::displayFullRecipe(const Recipe& recipe) {
-    std::cout << "Recipe: " << recipe.getRecipeName() << "\n";
-    std::cout << "Ingredients:\n";
-    for (const auto& ingredient : recipe.getRequiredIngredients()) {
-        std::cout << "- " << ingredient.first << ": " << ingredient.second << "\n";
-    }
-
-    std::cout << "Steps:\n";
-    for (const auto& step : recipe.getSteps()) {
-        std::cout << "- " << step << "\n";
-    }
-}
-
-void RecipeManager::saveIngredientsToFile(const std::string& filename) {
-    json j;
-    j["Fridge"] = fridge.toJSON();
-    j["Pantry"] = pantry.toJSON();
-
-    std::ofstream file(filename);
-    if (file.is_open()) {
-        file << j.dump(4);
-        file.close();
-        std::cout << "Ingredients saved to " << filename << "\n";
-    } else {
-        std::cerr << "Unable to open file " << filename << "\n";
-    }
-}
 
 void RecipeManager::viewRecipeHistory() {
-    std::ifstream file("history.json");
+    std::ifstream file("../data/history.json");
 
     if (!file.is_open()) {
         std::cerr << "History file does not exist. Initializing history.\n";
-        std::ofstream outfile("history.json");
+        std::ofstream outfile("../data/history.json");
         outfile << "[]";  // Empty array
         outfile.close();
         return;
@@ -221,7 +230,7 @@ void RecipeManager::viewRecipeHistory() {
     } catch (json::parse_error& e) {
         std::cerr << "Error parsing history file: " << e.what() << "\n";
         std::cerr << "Resetting history to an empty array.\n";
-        std::ofstream outfile("history.json");
+        std::ofstream outfile("../data/history.json");
         outfile << "[]";
         outfile.close();
         return;
@@ -229,7 +238,7 @@ void RecipeManager::viewRecipeHistory() {
 
     if (!history.is_array()) {
         std::cerr << "History format is incorrect, resetting history to an empty array.\n";
-        std::ofstream outfile("history.json");
+        std::ofstream outfile("../data/history.json");
         outfile << "[]";
         outfile.close();
         return;

@@ -1,4 +1,4 @@
-#include "Fridge.h"
+#include "../include/Fridge.h"
 
 void Fridge::addIngredient(const Ingredient& ingredient) {
     Storage::addIngredient(ingredient);

@@ -1,7 +1,7 @@
 #include <string>
-#include "../json.hpp"
+#include "../include/json.hpp"
 using json = nlohmann::json;  
-#include "Ingredient.h"
+#include "../include/Ingredient.h"
 
     Ingredient::Ingredient() {}
     Ingredient::Ingredient(std::string n, int q, std::string exp = "") : name(n), quantity(q), expirationDate(exp) {}
@@ -21,3 +21,5 @@ using json = nlohmann::json;
     Ingredient Ingredient::fromJSON(const json& j) {
         return Ingredient(j["name"], j["quantity"], j.value("expirationDate", ""));
     }
+
+

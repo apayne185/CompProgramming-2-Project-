@@ -1,7 +1,13 @@
-#include "Recipe.h"
+#include "../include/Recipe.h"
+#include "../include/json.hpp"
+#include <fstream>
+using json = nlohmann::json;
+using std::string;
+using std::vector;
+using std::pair;
 
 Recipe::Recipe(std::string name, 
-           std::vector<std::pair<std::string, std::string>> ingredients, 
+           std::vector<std::pair<std::string, std::string>> ingredients,
            std::vector<std::pair<std::string, std::string>> condiments, 
            std::vector<std::string> steps, std::string type)
     : recipeName(name), requiredIngredients(ingredients), condiments(condiments), steps(steps), category(type) {}

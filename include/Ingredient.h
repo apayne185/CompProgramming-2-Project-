@@ -2,8 +2,7 @@
 #define INGREDIENT_H
 
 #include <string>
-#include "../json.hpp"
-
+#include "../include/json.hpp"
 using json = nlohmann::json;
 
 class Ingredient {
@@ -11,6 +10,7 @@ private:
     std::string name;
     int quantity;
     std::string expirationDate;
+
 public:
     Ingredient();
     Ingredient(std::string name, int quantity, std::string exp);
@@ -26,3 +26,4 @@ public:
 };
 
 #endif
+

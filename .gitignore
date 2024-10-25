@@ -1,0 +1,31 @@
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+
+# Build directories
+cmake-build-debug/
+cmake-build-release/
+build/
+
+# Compiled outputs - can cause issues when shared between windows/macos
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+
+# this is for idea folder - automatically uploaded by jetbrains IDE/ ignored for macos and vs code users
+.idea/*
+!.idea/misc.xml
+!.idea/modules.xml
+!.idea/vcs.xml
+
+# this file is created by the macOS. ignored for windows users
+.DS_Store
+
+
+# other generated files
+*.log
+*.out
