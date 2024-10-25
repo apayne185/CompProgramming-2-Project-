@@ -174,8 +174,6 @@ The following files were created:
 - **Recipe.h** and **Recipe.cpp**: Defines and implements the `Recipe` class.
 - **RecipeManager.h** and **RecipeManager.cpp**: Defines and implements the `RecipeManager` class.
 
-These files allow us to maintain a clean project structure and make it easier to write and manage the tests for each class. Here's an example of how the structure looks:
-
 
 #### Test Coverage
 
