@@ -26,11 +26,11 @@ private:
 
 public:
     // Getter functions for accessing fridge and pantry
-    const Fridge& getFridge() const {
+    const Fridge& getFridge() {
         return fridge;
     }
 
-    const Pantry& getPantry() const {
+    const Pantry& getPantry() {
         return pantry;
     }
 
@@ -39,8 +39,10 @@ public:
     // Member functions
     void loadIngredientsFromFile(const std::string& filename);
     void collectIngredients();
+    void generateGroceryList(const std::vector<std::string>& missingIngredients);
     void matchRecipes();
     void viewRecipeHistory();
+    void clearGroceryList();
     void menu();
 };
 

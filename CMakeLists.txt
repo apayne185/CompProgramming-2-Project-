@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.15)  # CMake version check
 project(RecipeManagerExecutable)     # Creates project under this name
 
-set(CMAKE_CXX_STANDARD 17)            # Enable c++17 standard
+set(CMAKE_CXX_STANDARD 20)            # Enable c++20 standard
 set(CMAKE_CXX_STANDARD_REQUIRED ON) #ensures uniform compiler behavior between macos and windows
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")   # Enables execptoin handling
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")   # Enables execptoin handling
 set(SOURCE_DIR "${CMAKE_SOURCE_DIR}/src")  # path handling - windows uses \, mac uses / --> this sets it to /
 
 
@@ -25,14 +25,13 @@ set(SOURCE_FILES
         src/RecipeManager.cpp
         src/Storage.cpp)
 
-#ensures this package is required across all platforms - nlohmann_json
-add_subdirectory(json)
-find_package(nlohmann_json REQUIRED)
-target_link_libraries(RecipeManagerExecutable PRIVATE nlohmann_json::nlohmann_json)
-
-
 # Add executable target with source files listed above
 add_executable(RecipeManagerExecutable ${SOURCE_FILES})
+
+#ensures this package is required across all platforms - nlohmann_json
+#add_subdirectory(json)
+find_package(nlohmann_json REQUIRED)
+target_link_libraries(RecipeManagerExecutable PRIVATE nlohmann_json::nlohmann_json)
 
 
 # establishes our data files
