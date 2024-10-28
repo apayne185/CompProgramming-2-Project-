@@ -11,8 +11,10 @@ set(SOURCE_DIR "${CMAKE_SOURCE_DIR}/src")  # path handling - windows uses \, mac
 
 
 #includes our header&nlohmann_json files  --> lets test, but we can likely remove "../include/json.hpp" and turn to #include "json.hpp" now
-include_directories(include)
-include_directories(json/include)
+#include_directories(include)
+#include_directories(json/include)
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
 
 
 #includes our src (.cpp) files
@@ -30,8 +32,8 @@ add_executable(RecipeManagerExecutable ${SOURCE_FILES})
 
 #ensures this package is required across all platforms - nlohmann_json
 #add_subdirectory(json)
-find_package(nlohmann_json REQUIRED)
-target_link_libraries(RecipeManagerExecutable PRIVATE nlohmann_json::nlohmann_json)
+#find_package(nlohmann_json REQUIRED)
+#target_link_libraries(RecipeManagerExecutable PRIVATE nlohmann_json::nlohmann_json)
 
 
 # establishes our data files
