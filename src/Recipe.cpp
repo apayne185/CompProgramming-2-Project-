@@ -1,6 +1,7 @@
 #include "../include/Recipe.h"
 #include "../include/json.hpp"
 #include <fstream>
+#include <iostream>
 using json = nlohmann::json;
 using std::string;
 using std::vector;
