@@ -21,9 +21,23 @@ notes:
    - .gitmodules is tracking our submodule (json folder) which holds our nlohmann_json package. DO NOT put in gitignore.
 
 future updates/comments
-   - we need basic error handling for catching issues in recipemanager.cpp. If something fails in this file, we need to know where and if it was failing due to an external .h file
-   - be mindful of your automatically generated files for macos/vscode/clang. Check which ones should be in gitignore
-   - leave VC to github commits. No more repeat files. This will not work on CMake or in general
+
+   Within Code
+      - we need basic error handling for catching issues in recipemanager.cpp. If something fails in this file, we need to know where and if it was failing due to an external .h file
+      - be mindful of your automatically generated files for macos/vscode/clang. Check which ones should be in gitignore
+      - leave VC to github commits. No more repeat files. This will not work on CMake or in general (no 200 line commits)
+      - Working polyphirsm 
+      - Casting - which is converting data types? why would this be essential? (you originally said casking but thats not a c programming term to my knowledge)
+      - Memory management (& rule of 3 and 5 - handles memory leaks, dangling pointers, efficient transfers)
+      - Performance (benchmarks/timers to analyze)
+
+   Within Documentation
+      - UML - diagrams 
+         - structural diagrams (class, components, deployment diagrams)
+         - behavioral diagrams (use cases, sequence interactions, activity diagrams)
+      - Performance Analysis 
+      - Challenges 
+      
 
 
 # CompProgramming-2-Project-
