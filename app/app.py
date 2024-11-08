@@ -3,15 +3,21 @@
 from flask import Flask, render_template, request, jsonify
 import requests
 from datetime import datetime
+import os
+from dotenv import load_dotenv
 
-#need to import models
+#need to import database models
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='app/templates')
 
 # Python Frontend
 @app.route('/')
 def home():
     return render_template('home.html')
+
+@app.route('/add-all-ingredients')
+def add_ingredients():
+    return render_template('add-all-ingredients.html')
 
 @app.route('/recipes')
 def recipes():
@@ -25,17 +31,34 @@ def grocery_list():
 def history():
     return render_template('history.html')
 
+'''
 
-
+#need to modify so if you add the ingredient more than once, it just adds quantities together
 
 # Calls C++ Backend
 # ADD/VIEW INGREDIENTS
 @app.route('/add-ingredient', methods=['POST'])
 def add_ingredient():
     data= request.get_json()
-    ingredient= { 'name': data['name'], 'quantity': data['quantity'] } # API call to backend to save ingredients
-    response= requests.post('http://localhost:5001/add_ingredient', json=ingredient)
-    return jsonify(response.json()) #responds with updated list
+
+    ingredient_name = data.get('name')
+    ingredient_quantity = data.get('quantity')
+
+    existing_ingredient = Ingredient.query.filter_by(name=ingredient_name).first()
+    if existing_ingredient:
+        return jsonify({'error': f'Ingredient "{ingredient_name}" is already added to your storage'}), 409
+
+    try:            # if ingredient doesn't exist, add to database
+        new_ingredient = Ingredient(name=ingredient_name, quantity=ingredient_quantity)
+        db.session.add(new_ingredient)
+        db.session.commit()
+        return jsonify({'message': 'Ingredient added successfully'}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to add ${ingredient_name}', 'message': str(e)}), 500
+    #response= requests.post('http://localhost:5001/add_ingredient', json=ingredient)
+    #return jsonify(response.json()) #responds with updated list
 
 
 # fetches ingredient list from backend (need to configure to sqlalchemy database) --> posts it on the ingredient_list on UI
@@ -52,13 +75,16 @@ def ingredient_list():
 @app.route('/generate-recipes')
 def generate_recipes():
     response= requests.get('http://localhost:5001/get_matching_recipes')
-    recipes= response.json()
+    recipes = response.json()
     #if we do not have any complete matches, this shows partial recipe matches
     if not recipes:
         response = requests.get('http://localhost:5001/get_alternative_recipes')
         alternative_recipes = response.json()
         return jsonify({'recipes': [], 'alternatives': alternative_recipes})
     return jsonify(recipes)
+
+    except requests.exceptions.RequestException as exc:         # connection errors, timeout, etc
+        return jsonify({'error':'failed to fetch recipes from backend','message': str(exc)}), 500
 
 # gets the recipe details --> ingredients, name, picture, etc from backend
 @app.route('/recipe-details/<recipe_id>')
@@ -127,8 +153,9 @@ def remake_recipe():
     recipe_id = data['recipe_id']
     response = requests.post(f'http://localhost:5001/remake_recipe', json={'recipe_id': recipe_id})
     return jsonify(response.json())
-
+'''
 
 
 if __name__ == '__main__':
     app.run(debug=True)
+

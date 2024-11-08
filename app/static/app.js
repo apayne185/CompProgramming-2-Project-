@@ -102,7 +102,6 @@ async function viewGroceryList(){
 }
 
 
-
 // Creates modal for viewing Recipe History, allows for users to click and remake recipes
 async function viewHistory(){
     const response = await fetch(`/history-data`);

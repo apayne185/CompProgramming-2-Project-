@@ -3085,15 +3085,15 @@ using enable_if_t = typename std::enable_if<B, T>::type;
 
 // integer_sequence
 //
-// Class template representing a compile-time integer sequence. An instantiation
+// Class templates representing a compile-time integer sequence. An instantiation
 // of `integer_sequence<T, Ints...>` has a sequence of integers encoded in its
-// type through its template arguments (which is a common need when
+// type through its templates arguments (which is a common need when
 // working with C++11 variadic templates). `absl::integer_sequence` is designed
 // to be a drop-in replacement for C++14's `std::integer_sequence`.
 //
 // Example:
 //
-//   template< class T, T... Ints >
+//   templates< class T, T... Ints >
 //   void user_function(integer_sequence<T, Ints...>);
 //
 //   int main()
@@ -3114,7 +3114,7 @@ struct integer_sequence
 
 // index_sequence
 //
-// A helper template for an `integer_sequence` of `size_t`,
+// A helper templates for an `integer_sequence` of `size_t`,
 // `absl::index_sequence` is designed to be a drop-in replacement for C++14's
 // `std::index_sequence`.
 template <size_t... Ints>
@@ -3160,7 +3160,7 @@ struct Gen<T, 0>
 
 // make_integer_sequence
 //
-// This template alias is equivalent to
+// This templates alias is equivalent to
 // `integer_sequence<int, 0, 1, ..., N-1>`, and is designed to be a drop-in
 // replacement for C++14's `std::make_integer_sequence`.
 template <typename T, T N>
@@ -3168,7 +3168,7 @@ using make_integer_sequence = typename utility_internal::Gen<T, N>::type;
 
 // make_index_sequence
 //
-// This template alias is equivalent to `index_sequence<0, 1, ..., N-1>`,
+// This templates alias is equivalent to `index_sequence<0, 1, ..., N-1>`,
 // and is designed to be a drop-in replacement for C++14's
 // `std::make_index_sequence`.
 template <size_t N>
@@ -3368,9 +3368,9 @@ NLOHMANN_JSON_NAMESPACE_END
     NLOHMANN_JSON_NAMESPACE_BEGIN
 
     /*!
-    @brief default JSONSerializer template argument
+    @brief default JSONSerializer templates argument
 
-    This serializer ignores the template arguments and uses ADL
+    This serializer ignores the templates arguments and uses ADL
     ([argument-dependent lookup](https://en.cppreference.com/w/cpp/language/adl))
     for serialization.
     */
@@ -3544,7 +3544,7 @@ struct has_non_default_from_json < BasicJsonType, T, enable_if_t < !is_basic_jso
 };
 
 // This trait checks if BasicJsonType::json_serializer<T>::to_json exists
-// Do not evaluate the trait when T is a basic_json type, to avoid template instantiation infinite recursion.
+// Do not evaluate the trait when T is a basic_json type, to avoid templates instantiation infinite recursion.
 template<typename BasicJsonType, typename T, typename = void>
 struct has_to_json : std::false_type {};
 
@@ -3889,7 +3889,7 @@ template<typename BasicJsonType>
 struct is_json_iterator_of<BasicJsonType, typename BasicJsonType::const_iterator> : std::true_type
 {};
 
-// checks if a given type T is a template specialization of Primary
+// checks if a given type T is a templates specialization of Primary
 template<template <typename...> class Primary, typename T>
 struct is_specialization_of : std::false_type {};
 
@@ -4599,7 +4599,7 @@ inline void from_json(const BasicJsonType& j, typename std::nullptr_t& n)
     n = nullptr;
 }
 
-// overloads for basic_json template parameters
+// overloads for basic_json templates parameters
 template < typename BasicJsonType, typename ArithmeticType,
            enable_if_t < std::is_arithmetic<ArithmeticType>::value&&
                          !std::is_same<ArithmeticType, typename BasicJsonType::boolean_t>::value,
@@ -4881,7 +4881,7 @@ inline void from_json(const BasicJsonType& j, ConstructibleObjectType& obj)
     obj = std::move(ret);
 }
 
-// overload for arithmetic types, not chosen for basic_json template arguments
+// overload for arithmetic types, not chosen for basic_json templates arguments
 // (BooleanType, etc..); note: Is it really necessary to provide explicit
 // overloads for boolean_t etc. in case of a custom BooleanType which is not
 // an arithmetic type?
@@ -12814,7 +12814,7 @@ template<typename IteratorType> class iteration_proxy;
 template<typename IteratorType> class iteration_proxy_value;
 
 /*!
-@brief a template for a bidirectional iterator for the @ref basic_json class
+@brief a templates for a bidirectional iterator for the @ref basic_json class
 This class implements a both iterators (iterator and const_iterator) for the
 @ref basic_json class.
 @note An iterator is called *initialized* when a pointer to a JSON value has
@@ -12851,7 +12851,7 @@ class iter_impl // NOLINT(cppcoreguidelines-special-member-functions,hicpp-speci
                   "basic_json iterator assumes array and object type iterators satisfy the LegacyBidirectionalIterator named requirement.");
 
   public:
-    /// The std::iterator class template (used as a base class to provide typedefs) is deprecated in C++17.
+    /// The std::iterator class templates (used as a base class to provide typedefs) is deprecated in C++17.
     /// The C++ Standard has never required user-defined iterators to derive from std::iterator.
     /// A user-defined iterator should provide publicly accessible typedefs named
     /// iterator_category, value_type, difference_type, pointer, and reference.
@@ -13565,7 +13565,7 @@ namespace detail
 //////////////////////
 
 /*!
-@brief a template for a reverse iterator class
+@brief a templates for a reverse iterator class
 
 @tparam Base the base iterator type to reverse. Valid types are @ref
 iterator (to create @ref reverse_iterator) and @ref const_iterator (to
@@ -19491,7 +19491,7 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
 
     /// @name JSON value data types
     /// The data types to store a JSON value. These types are derived from
-    /// the template arguments passed to class @ref basic_json.
+    /// the templates arguments passed to class @ref basic_json.
     /// @{
 
     /// @brief default object key comparator type
@@ -20843,7 +20843,7 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
     /*!
     @brief get special-case overload
 
-    This overloads avoids a lot of template boilerplate, it can be seen as the
+    This overloads avoids a lot of templates boilerplate, it can be seen as the
     identity method
 
     @tparam BasicJsonType == @ref basic_json
@@ -21770,7 +21770,7 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
     size_type erase(const typename object_t::key_type& key)
     {
         // the indirection via erase_internal() is added to avoid making this
-        // function a template and thus de-rank it during overload resolution
+        // function a templates and thus de-rank it during overload resolution
         return erase_internal(key);
     }
 
