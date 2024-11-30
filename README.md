@@ -6,6 +6,8 @@ to run:
    - cmake --build .        #builds the project 
    - .\RecipeManagerExecutable       #run the executable 
 
+**THESE WERE OLD STEPS. SETUP.BAT AUTOMATES THIS FOR WINDOWS. WE WILL NEED A MACOS VERSION OF THIS. 
+
 
 changes made: 
    - removed all classes from finalcode.cpp (changed name to main.cpp)

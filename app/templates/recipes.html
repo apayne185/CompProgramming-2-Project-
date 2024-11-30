@@ -1,4 +1,5 @@
 <!--THIS IS ALL PRELIMINARY WORK - WE NEED TO HAVE DATABASE/API READY FOR THIS-->
+<!--THIS IS ALL PRELIMINARY WORK - WE NEED TO HAVE DATABASE/API READY FOR THIS-->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -44,7 +45,7 @@
       </div>
 
       <!-- RECIPE DETAILS MODAL  (clicking on recipe for more info) -->
-      <div id="recipeDetailsModal" class="modal" style="display: None">
+      <div id="recipeDetailsModal" class="modal">
         <div class="modal-content">
           <span class="close" onclick="closeRecipeDetails()">&times</span>
           <div id="recipeDetails"></div>
@@ -53,9 +54,11 @@
       </div>
 
       <!-- GROCERY LIST MODAL -->
-      <div id="groceryListModal" class="modal" style="display: None">
+      <div id="groceryListModal" class="modal">
         <div class="modal-content">
           <span class="close" onclick="closeGroceryList()">&times</span>
+            <h2>GROCERY LIST</h2>
+          <p></p>
           <div id="groceryList"></div>
           <form id="groceryForm">
             <input type="text" id="groceryItemName" placeholder="Ingredient" required>
@@ -67,7 +70,7 @@
 
       <!-- RECIPE HISTORY MODAL -->
       <!-- need to add list -->
-      <div id="historyModal" class="modal" style="display: None">
+      <div id="historyModal" class="modal">
         <div class="modal-content">
           <span class="close" onclick="closeHistory()">&times</span>
           <div id="history">
