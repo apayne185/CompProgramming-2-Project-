@@ -1,4 +1,6 @@
 #include "../include/Storage.h"
+#include <stdexcept>
+#include <iostream>
 
 void Storage::addIngredient(const Ingredient& ingredient) {
     for (auto& ing : ingredients) {
@@ -26,7 +28,11 @@ json Storage::toJSON() const {
 }
 
 void Storage::fromJSON(const json& j) {
-    for (const auto& item : j) {
-        ingredients.push_back(Ingredient::fromJSON(item));
+    try {
+        for (const auto& item : j) {
+            ingredients.push_back(Ingredient::fromJSON(item));
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error parsing storage from JSON: " << e.what() << std::endl;
     }
 }
