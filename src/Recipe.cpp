@@ -21,6 +21,7 @@ std::string Recipe::getType() const {
     return category;
 }
 
+
 bool Recipe::canMakeRecipe(const std::vector<Ingredient>& userIngredients, std::vector<std::string>& missingIngredients) const {
     bool hasAllMainIngredients = true;
 
@@ -29,6 +30,7 @@ bool Recipe::canMakeRecipe(const std::vector<Ingredient>& userIngredients, std::
         for (const auto& userIngredient : userIngredients) {
             std::string recipeIngredientName = reqIngredient.first;
             std::string userIngredientName = userIngredient.getName();
+
             std::transform(recipeIngredientName.begin(), recipeIngredientName.end(), recipeIngredientName.begin(), ::tolower);
             std::transform(userIngredientName.begin(), userIngredientName.end(), userIngredientName.begin(), ::tolower);
 
@@ -58,6 +60,7 @@ std::vector<std::string> Recipe::getSteps() const {
     return steps;
 }
 
+
 std::vector<Recipe> loadRecipesFromJSON(const std::string& filename) {
     std::vector<Recipe> recipes;
 
@@ -67,35 +70,42 @@ std::vector<Recipe> loadRecipesFromJSON(const std::string& filename) {
         return recipes;
     }
 
-    json j;
-    inputFile >> j;
+    try {
+        json j;
+        inputFile >> j;
 
-    for (const auto& recipeData : j["recipes"]) {
-        std::string recipeName = recipeData["name"];
-        std::string category = recipeData["category"];
-        std::vector<std::pair<std::string, std::string>> ingredients;
-        std::vector<std::pair<std::string, std::string>> condiments;
-        std::vector<std::string> steps;
+        for (const auto& recipeData : j["recipes"]) {
+            std::string recipeName = recipeData.value("name", "Unnamed Recipe");
+            std::string category = recipeData.value("category", "Uncategorized");
+            std::vector<std::pair<std::string, std::string>> ingredients;
+            if(recipeData.contains("ingredients")) {
+                for (const auto& ingredient : recipeData["ingredients"]) {
+                    std::string name = ingredient.value("name", "Unnamed Ingredient");
+                    std::string quantity = ingredient.value("quantity", "0");
+                    std::string unit = ingredient.value("unit", "");
+                    ingredients.push_back({ name, quantity + " " + (unit.empty() ? "" : " " + unit)});
+                }
+            }
 
-        for (const auto& ingredient : recipeData["ingredients"]) {
-            std::string name = ingredient["name"];
-            std::string quantity = ingredient["quantity"];
-            std::string unit = ingredient["unit"];
-            ingredients.push_back({ name, quantity + " " + unit });
+            std::vector<std::pair<std::string, std::string>> condiments;
+            if(recipeData.contains("condiments")) {
+                for (const auto& condiment : recipeData["condiments"]) {
+                    std::string name = condiment.value("name", "Unknown Condiment");
+                    std::string quantity = condiment.value("quantity", "0");
+                    std::string unit = condiment.value("unit", "");
+                    condiments.push_back({ name, quantity + " " + (unit.empty() ? "" : " " + unit)});
+               }
+            }
+            std::vector<std::string> steps;
+            if(recipeData.contains("steps")) {
+                for (const auto& step : recipeData["steps"]) {
+                    steps.push_back(step.get<std::string>());
+                }
+            }
+            recipes.emplace_back(recipeName, ingredients, condiments, steps, category);
         }
-
-        for (const auto& condiment : recipeData["condiments"]) {
-            std::string name = condiment["name"];
-            std::string quantity = condiment["quantity"];
-            std::string unit = condiment["unit"];
-            condiments.push_back({ name, quantity + " " + unit });
-        }
-
-        for (const auto& step : recipeData["steps"]) {
-            steps.push_back(step);
-        }
-
-        recipes.emplace_back(recipeName, ingredients, condiments, steps, category);
+    } catch (const std::exception& e) {
+      std::cerr << "Error parsing JSON file: " << e.what() << std::endl;
     }
 
     return recipes;

@@ -1,4 +1,7 @@
 #include <string>
+#include <iostream>
+#include <fstream>
+#include <stdexcept>
 #include "../include/json.hpp"
 #include "../include/RecipeManager.h"
 #include "../include/UIManager.h"
@@ -7,26 +10,26 @@ using json = nlohmann::json;
 
 int main() {
     std::string recipeFilename = "../data/recipes.json";
-    RecipeManager manager(recipeFilename);
-
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Undecided");
-    UIManager uiManager(window, manager);
-
-    while (window.isOpen()) {
-      sf::Event event;
-      while (window.pollEvent(event)) {
-        if (event.type == sf::Event::Closed) {
-          window.close();
-        }
-        uiManager.handleEvent(event);
-      }
-      uiManager.update();
-      window.clear(sf::Color::White);
-      uiManager.render();
-      window.display();
+    std::fstream recipeFile(recipeFilename);
+    if (!recipeFile.is_open()) {
+        std::cerr << "Error opening recipe file: " << recipeFilename << std::endl;
+        return 1;
     }
+    recipeFile.close();
 
-    manager.menu();
+    try{
+        RecipeManager manager(recipeFilename);
+        manager.menu();
+    } catch (const std::ifstream::failure& e) {
+          std::cerr << "File error: " << e.what() << "\n";
+          return 1;
+    } catch (const std::runtime_error& e) {
+          std::cerr << "Runtime error: " << e.what() << "\n";
+          return 1;
+    } catch (const std::exception& e) {
+          std::cerr << "An unexpected error occured: " << e.what() << "\n";
+          return 1;
+    }
 
     return 0;
 }

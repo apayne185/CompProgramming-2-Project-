@@ -10,7 +10,11 @@ void RecipeManager::saveHistory(const Recipe& recipe) {
     json history;
 
     if (infile.is_open() && infile.peek() != std::ifstream::traits_type::eof()) {
-        infile >> history;
+        try {infile >> history;}
+        catch (const json::parse_error& e) {
+          std::cout << "Error parsing history json file: " << e.what();
+          history = json::array();    //resets to an empty array
+        }
     }
     infile.close();
 
@@ -32,6 +36,8 @@ void RecipeManager::saveHistory(const Recipe& recipe) {
     if (outfile.is_open()) {
         outfile << history.dump(4);
         outfile.close();
+    } else {
+      std::cerr << "Error opening history file for writing" << std::endl;
     }
 }
 
@@ -43,31 +49,50 @@ void RecipeManager::loadIngredientsFromFile(const std::string& filename) {
     }
 
     json j;
-    file >> j;
+    try {
+        file >> j;
+    } catch (const json::parse_error& e) {
+        std::cerr << "Error parsing JSON from " << filename << ": " << e.what() << "\n";
+        return;
+    }
 
     if (j.contains("Fridge")) {
-        fridge.fromJSON(j["Fridge"]);
+        try {fridge.fromJSON(j["Fridge"]); }
+        catch (const std::exception& e) {std::cerr << "Error loading fridge data " << e.what() << "\n";}
     }
 
     if (j.contains("Pantry")) {
-        pantry.fromJSON(j["Pantry"]);
+        try { pantry.fromJSON(j["Pantry"]); }
+        catch (const std::exception& e) {std::cerr << "Error loading pantry data " << e.what() << "\n";}
     }
 
     file.close();
     std::cout << "Ingredients loaded from " << filename << "\n";
 }
 
+
 void RecipeManager::collectIngredients() {
     while (true) {
         std::string name;
         int quantity;
+
         std::cout << "Please enter the ingredient name (or type 'done' to finish): ";
         std::cin.ignore();
         std::getline(std::cin, name);
+        if (name.empty()) {
+            std:: cout << "Name cannot be empty\n";
+            continue;
+        }
         if (name == "done") break;
 
+
         std::cout << "Enter the quantity of " << name << ": ";
-        std::cin >> quantity;
+        if(!(std::cin >> quantity) || quantity <= 0) {
+          std::cerr << "Quantity must be greater than 0\n";
+          std::cin.clear();
+          std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');    //removes the invalid input
+        }
+
         Ingredient newIngredient(name, quantity, "");
 
         std::string storageLocation;
@@ -91,15 +116,23 @@ void RecipeManager::collectIngredients() {
     }
 }
 
+
 void RecipeManager::generateGroceryList(const std::vector<std::string>& missingIngredients) {
     json groceryList;
     std::ifstream file("../data/grocery_list.json");
 
     // If grocery_list.json already exists, load existing items 
     if (file.is_open()) {
-        file >> groceryList;
+        try { file >> groceryList;}
+        catch (const json::parse_error& e) {
+          std::cerr << "Error reading grocery list JSON file: " << e.what() << "\n";
+          groceryList = json::array();
+        }
         file.close();
+    } else {
+        groceryList = json::array();
     }
+
 
     for (const auto& ingredient : missingIngredients) {
         bool alreadyInList = false;
