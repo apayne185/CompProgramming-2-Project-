@@ -61,41 +61,51 @@ std::vector<std::string> Recipe::getSteps() const {
 std::vector<Recipe> loadRecipesFromJSON(const std::string& filename) {
     std::vector<Recipe> recipes;
 
-    std::ifstream inputFile(filename);
-    if (!inputFile.is_open()) {
-        std::cerr << "Could not open the file: " << filename << std::endl;
-        return recipes;
-    }
-
-    json j;
-    inputFile >> j;
-
-    for (const auto& recipeData : j["recipes"]) {
-        std::string recipeName = recipeData["name"];
-        std::string category = recipeData["category"];
-        std::vector<std::pair<std::string, std::string>> ingredients;
-        std::vector<std::pair<std::string, std::string>> condiments;
-        std::vector<std::string> steps;
-
-        for (const auto& ingredient : recipeData["ingredients"]) {
-            std::string name = ingredient["name"];
-            std::string quantity = ingredient["quantity"];
-            std::string unit = ingredient["unit"];
-            ingredients.push_back({ name, quantity + " " + unit });
+    try {
+        std::ifstream inputFile(filename);
+        if (!inputFile.is_open()) {
+            throw std::runtime_error("Could not open the file: " + filename);
         }
 
-        for (const auto& condiment : recipeData["condiments"]) {
-            std::string name = condiment["name"];
-            std::string quantity = condiment["quantity"];
-            std::string unit = condiment["unit"];
-            condiments.push_back({ name, quantity + " " + unit });
-        }
+        json j;
+        inputFile >> j;
 
-        for (const auto& step : recipeData["steps"]) {
-            steps.push_back(step);
-        }
+        for (const auto& recipeData : j["recipes"]) {
+            if (!recipeData.contains("name") || !recipeData.contains("ingredients")) {
+                throw std::runtime_error("Malformed recipe data in JSON");
+            }
 
-        recipes.emplace_back(recipeName, ingredients, condiments, steps, category);
+            std::string recipeName = recipeData["name"];
+            std::string category = recipeData.value("category", "Unknown");
+            std::vector<std::pair<std::string, std::string>> ingredients;
+            std::vector<std::pair<std::string, std::string>> condiments;
+            std::vector<std::string> steps;
+
+            for (const auto& ingredient : recipeData["ingredients"]) {
+                if (!ingredient.contains("name") || !ingredient.contains("quantity")) {
+                    throw std::runtime_error("Malformed ingredient data for recipe: " + recipeName);
+                }
+                std::string name = ingredient["name"];
+                std::string quantity = ingredient["quantity"];
+                std::string unit = ingredient.value("unit", "");
+                ingredients.push_back({ name, quantity + " " + unit });
+            }
+
+            for (const auto& condiment : recipeData["condiments"]) {
+                std::string name = condiment["name"];
+                std::string quantity = condiment["quantity"];
+                std::string unit = condiment.value("unit", "");
+                condiments.push_back({ name, quantity + " " + unit });
+            }
+
+            for (const auto& step : recipeData["steps"]) {
+                steps.push_back(step);
+            }
+
+            recipes.emplace_back(recipeName, ingredients, condiments, steps, category);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error loading recipes from JSON: " << e.what() << std::endl;
     }
 
     return recipes;
