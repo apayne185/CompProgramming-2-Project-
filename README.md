@@ -14,6 +14,7 @@ changes made:
    - wrote CMakeLists.txt & gitignore files
    - ensured there are standards that both our computers can use, please test this
 
+
 notes: 
    - CMakeCache.txt, cmake_install.cmake, etc are automatically created and included in gitignore
    - cmake-build-debug & CMakeFiles folders are created when you run cmake .., do not delete them but they will be included in the gitignore. If you for some reason delete build, delete these too then. 
@@ -30,6 +31,7 @@ Within Code
    - Casting - which is converting data types? why would this be essential? (you originally said casking but thats not a c programming term to my knowledge)
    - Memory management (& rule of 3 and 5 - handles memory leaks, dangling pointers, efficient transfers, smart pointers) --> Makenna
    - Performance (benchmarks/timers to analyze) --> ?
+   - Redo Testing --> ?
 
 Within Documentation
    - UML - diagrams 
