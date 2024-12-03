@@ -32,6 +32,7 @@ Within Code
    - Memory management (& rule of 3 and 5 - handles memory leaks, dangling pointers, efficient transfers, smart pointers) --> Makenna
    - Performance (benchmarks/timers to analyze) --> ?
    - Redo Testing --> ?
+   - Integrating database into our classes
 
 Within Documentation
    - UML - diagrams 
