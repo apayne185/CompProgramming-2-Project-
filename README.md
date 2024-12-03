@@ -32,6 +32,9 @@ Within Code
    - Casting - which is converting data types? why would this be essential? (you originally said casking but thats not a c programming term to my knowledge)
    - Memory management (& rule of 3 and 5 - handles memory leaks, dangling pointers, efficient transfers)
    - Performance (benchmarks/timers to analyze)
+   - Smart pointers (dynamic memory)
+   - Templates
+
 
 Within Documentation
    - UML - diagrams 
