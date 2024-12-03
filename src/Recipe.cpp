@@ -1,5 +1,5 @@
-#include "../include/Recipe.h"
-#include "../include/json.hpp"
+#include "Recipe.h"
+#include "json/json.hpp"
 #include <fstream>
 #include <iostream>
 using json = nlohmann::json;

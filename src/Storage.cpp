@@ -1,4 +1,5 @@
-#include "../include/Storage.h"
+#include "Storage.h"
+#include <iostream>
 
 void Storage::addIngredient(const Ingredient& ingredient) {
       if (ingredient.getName().empty()) {

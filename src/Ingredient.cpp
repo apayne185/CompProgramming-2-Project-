@@ -1,14 +1,15 @@
 #include <string>
-#include "../include/json.hpp"
+#include "json/json.hpp"
 using json = nlohmann::json;  
-#include "../include/Ingredient.h"
+#include "Ingredient.h"
+#include <iostream>
 
     Ingredient::Ingredient() {}
     Ingredient::Ingredient(std::string n, int q, std::string exp = "") : name(n), quantity(q), expirationDate(exp) {
       if(n.empty()){
         std::cerr << "Empty Ingredient Name" << std::endl;
       }
-      if(n.q <= 0){
+      if(q <= 0){
         std::cerr << "Empty Ingredient Quantity or Must be Higher than 0" << std::endl;
       }
     }

@@ -14,6 +14,7 @@ set(SOURCE_DIR "${CMAKE_SOURCE_DIR}/src")  # path handling - windows uses \, mac
 #include_directories(include)
 #include_directories(json/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/include/json)
 
 
 

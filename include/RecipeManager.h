@@ -9,7 +9,7 @@
 #include "Fridge.h"
 #include "Pantry.h"
 #include "Recipe.h"
-#include "json.hpp"
+#include "json/json.hpp"
 #include "Ingredient.h"
 
 using json = nlohmann::json;

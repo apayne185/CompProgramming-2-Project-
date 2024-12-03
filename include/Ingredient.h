@@ -2,7 +2,7 @@
 #define INGREDIENT_H
 
 #include <string>
-#include "../include/json.hpp"
+#include "json/json.hpp"
 using json = nlohmann::json;
 
 class Ingredient {

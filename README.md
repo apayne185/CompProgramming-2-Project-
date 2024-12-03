@@ -4,9 +4,10 @@ to run:
    - cd build
    - cmake ..      #this reads cmakelists.txt from root directory (..) and generates the necessary files for the build system
    - cmake --build .        #builds the project 
-   - .\RecipeManagerExecutable       #run the executable 
+   - .\Debug\RecipeManagerExecutable       #run the executable FOR MACOS/LINUX
+   - .\Debug\RecipeManagerExecutable.exe   #WINDOWS
 
-**THESE WERE OLD STEPS. SETUP.BAT AUTOMATES THIS FOR WINDOWS. WE WILL NEED A MACOS VERSION OF THIS. 
+**IGNORE THIS FOR NOW --> "THESE WERE OLD STEPS. SETUP.BAT AUTOMATES THIS FOR WINDOWS. WE WILL NEED A MACOS VERSION OF THIS." 
 
 
 changes made: 

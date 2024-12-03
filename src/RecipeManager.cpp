@@ -1,27 +1,27 @@
 #include "RecipeManager.h"
+#include <fstream>
+#include "json/json.hpp"
+
+//using json = nlohmann::json;
 
 RecipeManager::RecipeManager(const std::string& recipeFilename) {
     recipes = loadRecipesFromJSON(recipeFilename);
     loadIngredientsFromFile("../data/storage.json");
 }
 
+
 void RecipeManager::saveHistory(const Recipe& recipe) {
     std::ifstream infile("../data/history.json");
     json history;
 
     if (infile.is_open() && infile.peek() != std::ifstream::traits_type::eof()) {
-        try {infile >> history;}
-        catch (const json::parse_error& e) {
-          std::cout << "Error parsing history json file: " << e.what();
-          history = json::array();    //resets to an empty array
-        }
+        infile >> history;
     }
     infile.close();
 
     if (!history.is_array()) {
         history = json::array();
     }
-
 
     json j;
     j["name"] = recipe.getRecipeName();
@@ -36,10 +36,37 @@ void RecipeManager::saveHistory(const Recipe& recipe) {
     if (outfile.is_open()) {
         outfile << history.dump(4);
         outfile.close();
-    } else {
-      std::cerr << "Error opening history file for writing" << std::endl;
     }
 }
+
+void RecipeManager::displayFullRecipe(const Recipe& recipe) {
+    std::cout << "Recipe: " << recipe.getRecipeName() << "\n";
+    std::cout << "Ingredients:\n";
+    for (const auto& ingredient : recipe.getRequiredIngredients()) {
+        std::cout << "- " << ingredient.first << ": " << ingredient.second << "\n";
+    }
+
+    std::cout << "Steps:\n";
+    for (const auto& step : recipe.getSteps()) {
+        std::cout << "- " << step << "\n";
+    }
+}
+
+void RecipeManager::saveIngredientsToFile(const std::string& filename) {
+    json j;
+    j["Fridge"] = fridge.toJSON();
+    j["Pantry"] = pantry.toJSON();
+
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        file << j.dump(4);
+        file.close();
+        std::cout << "Ingredients saved to " << filename << "\n";
+    } else {
+        std::cerr << "Unable to open file " << filename << "\n";
+    }
+}
+
 
 void RecipeManager::loadIngredientsFromFile(const std::string& filename) {
     std::ifstream file(filename);
@@ -49,50 +76,31 @@ void RecipeManager::loadIngredientsFromFile(const std::string& filename) {
     }
 
     json j;
-    try {
-        file >> j;
-    } catch (const json::parse_error& e) {
-        std::cerr << "Error parsing JSON from " << filename << ": " << e.what() << "\n";
-        return;
-    }
+    file >> j;
 
     if (j.contains("Fridge")) {
-        try {fridge.fromJSON(j["Fridge"]); }
-        catch (const std::exception& e) {std::cerr << "Error loading fridge data " << e.what() << "\n";}
+        fridge.fromJSON(j["Fridge"]);
     }
 
     if (j.contains("Pantry")) {
-        try { pantry.fromJSON(j["Pantry"]); }
-        catch (const std::exception& e) {std::cerr << "Error loading pantry data " << e.what() << "\n";}
+        pantry.fromJSON(j["Pantry"]);
     }
 
     file.close();
     std::cout << "Ingredients loaded from " << filename << "\n";
 }
 
-
 void RecipeManager::collectIngredients() {
     while (true) {
         std::string name;
         int quantity;
-
         std::cout << "Please enter the ingredient name (or type 'done' to finish): ";
         std::cin.ignore();
         std::getline(std::cin, name);
-        if (name.empty()) {
-            std:: cout << "Name cannot be empty\n";
-            continue;
-        }
         if (name == "done") break;
 
-
         std::cout << "Enter the quantity of " << name << ": ";
-        if(!(std::cin >> quantity) || quantity <= 0) {
-          std::cerr << "Quantity must be greater than 0\n";
-          std::cin.clear();
-          std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');    //removes the invalid input
-        }
-
+        std::cin >> quantity;
         Ingredient newIngredient(name, quantity, "");
 
         std::string storageLocation;
@@ -115,52 +123,6 @@ void RecipeManager::collectIngredients() {
         saveIngredientsToFile("../data/storage.json");
     }
 }
-
-
-void RecipeManager::generateGroceryList(const std::vector<std::string>& missingIngredients) {
-    json groceryList;
-    std::ifstream file("../data/grocery_list.json");
-
-    // If grocery_list.json already exists, load existing items 
-    if (file.is_open()) {
-        try { file >> groceryList;}
-        catch (const json::parse_error& e) {
-          std::cerr << "Error reading grocery list JSON file: " << e.what() << "\n";
-          groceryList = json::array();
-        }
-        file.close();
-    } else {
-        groceryList = json::array();
-    }
-
-
-    for (const auto& ingredient : missingIngredients) {
-        bool alreadyInList = false;
-
-        // Check if the ingredient is already in the grocery list
-        for (const auto& item : groceryList) {
-            if (item["name"] == ingredient) {
-                alreadyInList = true;
-                break;
-            }
-        }
-
-        if (!alreadyInList) {
-            groceryList.push_back({{"name", ingredient}});
-        }
-    }
-
-    // Save the updated grocery list back to the file
-    std::ofstream outFile("../data/grocery_list.json");
-    if (outFile.is_open()) {
-        outFile << groceryList.dump(4); // Pretty print with indent of 4 spaces
-        outFile.close();
-        std::cout << "Grocery list saved to grocery_list.json\n";
-    } else {
-        std::cerr << "Unable to open file grocery_list.json\n";
-    }
-}
-
 
 void RecipeManager::matchRecipes() {
     int option;
@@ -203,11 +165,11 @@ void RecipeManager::matchRecipes() {
     std::string recipeType;
     std::cout << "Do you want a (S)weet or (Sa)vory recipe? ";
     std::cin >> recipeType;
-    std::transform(recipeType.begin(), recipeType.end(), recipeType.begin(), ::tolower); //convert input to lowercase
+    std::transform(recipeType.begin(), recipeType.end(), recipeType.begin(), ::tolower);
 
-    bool anyPossibleRecipes = false;  // Flag to check if any recipe can be made
+    std::vector<std::string> possibleRecipes;
+    std::vector<const Recipe*> matchingRecipes;
 
-    // First pass: Check if any recipe can be made with the selected ingredients
     for (const auto& recipe : recipes) {
         std::string category = recipe.getType();
         std::transform(category.begin(), category.end(), category.begin(), ::tolower);
@@ -215,88 +177,39 @@ void RecipeManager::matchRecipes() {
         if ((recipeType == "s" && category == "sweet") || (recipeType == "sa" && category == "savory")) {
             std::vector<std::string> missingIngredients;
             if (recipe.canMakeRecipe(selectedIngredients, missingIngredients)) {
-                anyPossibleRecipes = true;
-                break;  // Since we found at least one possible recipe, we can skip further checks
-            }
-        }
-    }
-
-    // If no possible recipes were found:
-    if (!anyPossibleRecipes) {
-        std::cout << "Sorry, you cannot make any recipes with the ingredients you have.\n";
-    }
-
-    // Second pass: Process recipes to show options and prompt for grocery list
-    int promptCounter = 0;  // this counter keeps track of how many times the user has been asked if they want to add ingredients to the grocery list.
-    for (const auto& recipe : recipes) {
-        std::string category = recipe.getType();
-        std::transform(category.begin(), category.end(), category.begin(), ::tolower);
-
-        if ((recipeType == "s" && category == "sweet") || (recipeType == "sa" && category == "savory")) {
-            std::vector<std::string> missingIngredients;
-            if (recipe.canMakeRecipe(selectedIngredients, missingIngredients)) {
-                std::cout << "You can make the following recipe:\n";
-                std::cout << "- " << recipe.getRecipeName() << "\n";
-
-                char viewFullRecipe;
-                std::cout << "Would you like to see the full recipe? (y/n): ";
-                std::cin >> viewFullRecipe;
-
-                if (viewFullRecipe == 'y' || viewFullRecipe == 'Y') {
-                    displayFullRecipe(recipe);
-                    saveHistory(recipe);
-                }
+                possibleRecipes.push_back(recipe.getRecipeName());
+                matchingRecipes.push_back(&recipe);
             } else if (!missingIngredients.empty()) {
-                // If ingredients are missing, prompt the user to add to the grocery list
-                if (promptCounter < 5) {  // Limit prompts to 5 recipes
-                    std::cout << "You are missing the following ingredients for " << recipe.getRecipeName() << ": ";
-                    for (const auto& ingredient : missingIngredients) {
-                        std::cout << ingredient << " ";
-                    }
-                    std::cout << "\n";
-
-                    char addToGroceryList;
-                    std::cout << "Would you like to add these missing ingredients to a grocery list? (y/n): ";
-                    std::cin >> addToGroceryList;
-                    promptCounter++;
-
-                    if (addToGroceryList == 'y' || addToGroceryList == 'Y') {
-                        generateGroceryList(missingIngredients);
-                    }
+                std::cout << "You are missing the following ingredients for " << recipe.getRecipeName() << ": ";
+                for (const auto& ingredient : missingIngredients) {
+                    std::cout << ingredient << " ";
                 }
+                std::cout << "\n";
             }
+        }
+    }
+
+    if (possibleRecipes.empty()) {
+        std::cout << "Sorry, you cannot make any recipes with the ingredients you have.\n";
+    } else {
+        std::cout << "Based on your ingredients, you can make the following recipes:\n";
+        for (size_t i = 0; i < possibleRecipes.size(); ++i) {
+            std::cout << i + 1 << ". " << possibleRecipes[i] << "\n";
+        }
+
+        int choice;
+        std::cout << "Enter the number of the recipe you want to see in full: ";
+        std::cin >> choice;
+
+        if (choice > 0 && choice <= matchingRecipes.size()) {
+            displayFullRecipe(*matchingRecipes[choice - 1]);
+            saveHistory(*matchingRecipes[choice - 1]);
+        } else {
+            std::cout << "Invalid choice.\n";
         }
     }
 }
 
-
-void RecipeManager::displayFullRecipe(const Recipe& recipe) {
-    std::cout << "Recipe: " << recipe.getRecipeName() << "\n";
-    std::cout << "Ingredients:\n";
-    for (const auto& ingredient : recipe.getRequiredIngredients()) {
-        std::cout << "- " << ingredient.first << ": " << ingredient.second << "\n";
-    }
-
-    std::cout << "Steps:\n";
-    for (const auto& step : recipe.getSteps()) {
-        std::cout << "- " << step << "\n";
-    }
-}
-
-void RecipeManager::saveIngredientsToFile(const std::string& filename) {
-    json j;
-    j["Fridge"] = fridge.toJSON();
-    j["Pantry"] = pantry.toJSON();
-
-    std::ofstream file(filename);
-    if (file.is_open()) {
-        file << j.dump(4);
-        file.close();
-        std::cout << "Ingredients saved to " << filename << "\n";
-    } else {
-        std::cerr << "Unable to open file " << filename << "\n";
-    }
-}
 
 void RecipeManager::viewRecipeHistory() {
     std::ifstream file("../data/history.json");
@@ -364,27 +277,16 @@ void RecipeManager::viewRecipeHistory() {
     file.close();
 }
 
-void RecipeManager::clearGroceryList() {
-    std::ofstream file("../data/grocery_list.json");
-    if (file.is_open()) {
-        file << "[]";  // clear the grocery list by writting an empty JSON array
-        file.close(); 
-    } else {
-        std::cerr << "Unable to open grocery list file to clear.\n";
-    }
-}
-
 void RecipeManager::menu() {
     int option;
     do {
         std::cout << "What would you like to do?\n";
-        std::cout << "1. Add ingredients and clear grocery list\n2. Generate recipes\n3. View recipe history\n4. Check notifications (expiring soon and running low)\n5. Exit\n";
+        std::cout << "1. Add ingredients\n2. Generate recipes\n3. View recipe history\n4. Check notifications (expiring soon and running low)\n5. Exit\n";
         std::cin >> option;
 
         switch (option) {
             case 1:
                 collectIngredients();
-                clearGroceryList();
                 break;
             case 2:
                 matchRecipes();
