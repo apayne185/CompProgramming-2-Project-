@@ -1,63 +1,155 @@
+#include <sqlite3.h>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <json.hpp>
+#include <curl/curl.h>
 #include "RecipeManager.h"
 
-RecipeManager::RecipeManager(const std::string& recipeFilename) {
-    recipes = loadRecipesFromJSON(recipeFilename);
-    loadIngredientsFromFile("../data/storage.json");
+// Helper function to join a vector of strings
+std::string join(const std::vector<std::string>& vec, const std::string& delimiter) {
+    std::ostringstream oss;
+    for (size_t i = 0; i < vec.size(); ++i) {
+        oss << vec[i];
+        if (i != vec.size() - 1) oss << delimiter;
+    }
+    return oss.str();
+}
+
+RecipeManager::RecipeManager(const std::string& dbName) {
+    this->dbName = dbName;  // Store the database name
+    loadIngredientsFromDatabase();  // Load ingredients from the database
+    loadRecipesFromDatabase();  // Load recipes from the database
+}
+
+void RecipeManager::loadRecipesFromDatabase() {
+    sqlite3* db;
+    sqlite3_open(dbName.c_str(), &db);
+
+    std::string sql = "SELECT Name, Category, Ingredients, Condiments, Steps FROM Recipes;";
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            // Fetch recipe data
+            std::string name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+            std::string category = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            std::string ingredientsStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+            std::string condimentsStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+            std::string stepsStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
+
+            // Parse ingredients into vector of pairs
+            std::vector<std::pair<std::string, std::string>> ingredients;
+            size_t pos = 0;
+            while ((pos = ingredientsStr.find(";")) != std::string::npos) {
+                std::string ingredientPair = ingredientsStr.substr(0, pos);
+                size_t separator = ingredientPair.find(":");
+                if (separator != std::string::npos) {
+                    std::string ingredientName = ingredientPair.substr(0, separator);
+                    std::string ingredientQuantity = ingredientPair.substr(separator + 1);
+                    ingredients.emplace_back(ingredientName, ingredientQuantity);
+                }
+                ingredientsStr.erase(0, pos + 1);
+            }
+
+            // Parse condiments into vector of pairs
+            std::vector<std::pair<std::string, std::string>> condiments;
+            pos = 0;
+            while ((pos = condimentsStr.find(";")) != std::string::npos) {
+                std::string condimentPair = condimentsStr.substr(0, pos);
+                size_t separator = condimentPair.find(":");
+                if (separator != std::string::npos) {
+                    std::string condimentName = condimentPair.substr(0, separator);
+                    std::string condimentQuantity = condimentPair.substr(separator + 1);
+                    condiments.emplace_back(condimentName, condimentQuantity);
+                }
+                condimentsStr.erase(0, pos + 1);
+            }
+
+            // Parse steps into vector
+            std::vector<std::string> steps;
+            pos = 0;
+            while ((pos = stepsStr.find(";")) != std::string::npos) {
+                steps.push_back(stepsStr.substr(0, pos));
+                stepsStr.erase(0, pos + 1);
+            }
+
+            // Construct Recipe object
+            Recipe recipe(name, ingredients, condiments, steps, category);
+            recipes.push_back(recipe);
+        }
+    } else {
+        std::cerr << "Failed to load recipes: " << sqlite3_errmsg(db) << std::endl;
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+}
+
+
+
+void RecipeManager::loadIngredientsFromDatabase() {
+    sqlite3* db;
+    sqlite3_open(dbName.c_str(), &db);
+
+    std::string sql = "SELECT Type, Name, Quantity, ExpirationDate FROM Storage;";
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            std::string type = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+            std::string name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            int quantity = sqlite3_column_int(stmt, 2);
+            std::string expirationDate = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+
+            Ingredient ingredient(name, quantity, expirationDate);
+            if (type == "Fridge") {
+                fridge.addIngredient(ingredient);
+            } else if (type == "Pantry") {
+                pantry.addIngredient(ingredient);
+            }
+        }
+    } else {
+        std::cerr << "Failed to load ingredients: " << sqlite3_errmsg(db) << std::endl;
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
 }
 
 void RecipeManager::saveHistory(const Recipe& recipe) {
-    std::ifstream infile("../data/history.json");
-    json history;
+    sqlite3* db;
+    sqlite3_open(dbName.c_str(), &db);
 
-    if (infile.is_open() && infile.peek() != std::ifstream::traits_type::eof()) {
-        infile >> history;
+    std::string sql = "INSERT INTO History (Name, Date) VALUES (?, ?);";
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_text(stmt, 1, recipe.getRecipeName().c_str(), -1, SQLITE_STATIC);
+
+        // Add the current date
+        time_t now = time(0);
+        char buffer[80];
+        strftime(buffer, sizeof(buffer), "%Y-%m-%d", localtime(&now));
+        sqlite3_bind_text(stmt, 2, buffer, -1, SQLITE_STATIC);
+
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            std::cerr << "Failed to save history: " << sqlite3_errmsg(db) << std::endl;
+        }
+    } else {
+        std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
     }
-    infile.close();
 
-    if (!history.is_array()) {
-        history = json::array();
-    }
-
-
-    json j;
-    j["name"] = recipe.getRecipeName();
-    time_t now = time(0);
-    char buffer[80];
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d", localtime(&now));
-    j["date"] = std::string(buffer);
-    
-    history.push_back(j);
-
-    std::ofstream outfile("../data/history.json");
-    if (outfile.is_open()) {
-        outfile << history.dump(4);
-        outfile.close();
-    }
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
 }
 
-void RecipeManager::loadIngredientsFromFile(const std::string& filename) {
-    std::ifstream file(filename);
-    if (!file.is_open()) {
-        std::cerr << "Could not open file: " << filename << "\n";
-        return;
-    }
-
-    json j;
-    file >> j;
-
-    if (j.contains("Fridge")) {
-        fridge.fromJSON(j["Fridge"]);
-    }
-
-    if (j.contains("Pantry")) {
-        pantry.fromJSON(j["Pantry"]);
-    }
-
-    file.close();
-    std::cout << "Ingredients loaded from " << filename << "\n";
-}
 
 void RecipeManager::collectIngredients() {
+    sqlite3* db;
+    sqlite3_open(dbName.c_str(), &db);
+
     while (true) {
         std::string name;
         int quantity;
@@ -68,66 +160,80 @@ void RecipeManager::collectIngredients() {
 
         std::cout << "Enter the quantity of " << name << ": ";
         std::cin >> quantity;
-        Ingredient newIngredient(name, quantity, "");
 
         std::string storageLocation;
         std::cout << "Is the ingredient stored in the (F)ridge or (P)antry? ";
         std::cin >> storageLocation;
 
+        std::string expirationDate;
         if (storageLocation == "F" || storageLocation == "f") {
-            std::string expirationDate;
             std::cout << "Enter the expiration date (YYYY-MM-DD): ";
             std::cin >> expirationDate;
-            newIngredient = Ingredient(name, quantity, expirationDate);
-            fridge.addIngredient(newIngredient);
-        } else if (storageLocation == "P" || storageLocation == "p") {
-            pantry.addIngredient(newIngredient);
-        } else {
-            std::cout << "Invalid option. Please choose (F)ridge or (P)antry.\n";
-            continue;
         }
 
-        saveIngredientsToFile("../data/storage.json");
+        // Insert ingredient into database
+        std::string sql = "INSERT INTO Storage (Type, Name, Quantity, ExpirationDate) VALUES (?, ?, ?, ?);";
+        sqlite3_stmt* stmt;
+        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, storageLocation == "F" || storageLocation == "f" ? "Fridge" : "Pantry", -1, SQLITE_STATIC);
+            sqlite3_bind_text(stmt, 2, name.c_str(), -1, SQLITE_STATIC);
+            sqlite3_bind_int(stmt, 3, quantity);
+            sqlite3_bind_text(stmt, 4, expirationDate.empty() ? nullptr : expirationDate.c_str(), -1, SQLITE_STATIC);
+
+            if (sqlite3_step(stmt) != SQLITE_DONE) {
+                std::cerr << "Failed to add ingredient: " << sqlite3_errmsg(db) << std::endl;
+            }
+        } else {
+            std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+        }
+
+        sqlite3_finalize(stmt);
     }
+
+    sqlite3_close(db);
 }
 
-void RecipeManager::generateGroceryList(const std::vector<std::string>& missingIngredients) {
-    json groceryList;
-    std::ifstream file("../data/grocery_list.json");
 
-    // If grocery_list.json already exists, load existing items 
-    if (file.is_open()) {
-        file >> groceryList;
-        file.close();
-    }
+void RecipeManager::generateGroceryList(const std::vector<std::string>& missingIngredients) {
+    sqlite3* db;
+    sqlite3_open(dbName.c_str(), &db);
 
     for (const auto& ingredient : missingIngredients) {
-        bool alreadyInList = false;
+        std::string sql = "INSERT INTO GroceryList (Name) VALUES (?);";
+        sqlite3_stmt* stmt;
 
-        // Check if the ingredient is already in the grocery list
-        for (const auto& item : groceryList) {
-            if (item["name"] == ingredient) {
-                alreadyInList = true;
-                break;
+        if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, ingredient.c_str(), -1, SQLITE_STATIC);
+
+            if (sqlite3_step(stmt) != SQLITE_DONE) {
+                std::cerr << "Failed to add to grocery list: " << sqlite3_errmsg(db) << std::endl;
             }
         }
 
-        if (!alreadyInList) {
-            groceryList.push_back({{"name", ingredient}});
+        sqlite3_finalize(stmt);
+    }
+
+    sqlite3_close(db);
+}
+
+void RecipeManager::printGroceryList() {
+    sqlite3* db;
+    sqlite3_open(dbName.c_str(), &db);
+
+    std::string sql = "SELECT Name FROM GroceryList;";
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
+        std::cout << "Your Grocery List:\n";
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            std::string name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+            std::cout << "- " << name << "\n";
         }
     }
 
-    // Save the updated grocery list back to the file
-    std::ofstream outFile("../data/grocery_list.json");
-    if (outFile.is_open()) {
-        outFile << groceryList.dump(4); // Pretty print with indent of 4 spaces
-        outFile.close();
-        std::cout << "Grocery list saved to grocery_list.json\n";
-    } else {
-        std::cerr << "Unable to open file grocery_list.json\n";
-    }
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
 }
-
 
 void RecipeManager::matchRecipes() {
     int option;
@@ -167,34 +273,12 @@ void RecipeManager::matchRecipes() {
         return;
     }
 
+
     std::string recipeType;
     std::cout << "Do you want a (S)weet or (Sa)vory recipe? ";
     std::cin >> recipeType;
-    std::transform(recipeType.begin(), recipeType.end(), recipeType.begin(), ::tolower); //convert input to lowercase
+    std::transform(recipeType.begin(), recipeType.end(), recipeType.begin(), ::tolower);
 
-    bool anyPossibleRecipes = false;  // Flag to check if any recipe can be made
-
-    // First pass: Check if any recipe can be made with the selected ingredients
-    for (const auto& recipe : recipes) {
-        std::string category = recipe.getType();
-        std::transform(category.begin(), category.end(), category.begin(), ::tolower);
-
-        if ((recipeType == "s" && category == "sweet") || (recipeType == "sa" && category == "savory")) {
-            std::vector<std::string> missingIngredients;
-            if (recipe.canMakeRecipe(selectedIngredients, missingIngredients)) {
-                anyPossibleRecipes = true;
-                break;  // Since we found at least one possible recipe, we can skip further checks
-            }
-        }
-    }
-
-    // If no possible recipes were found:
-    if (!anyPossibleRecipes) {
-        std::cout << "Sorry, you cannot make any recipes with the ingredients you have.\n";
-    }
-
-    // Second pass: Process recipes to show options and prompt for grocery list
-    int promptCounter = 0;  // this counter keeps track of how many times the user has been asked if they want to add ingredients to the grocery list.
     for (const auto& recipe : recipes) {
         std::string category = recipe.getType();
         std::transform(category.begin(), category.end(), category.begin(), ::tolower);
@@ -211,34 +295,102 @@ void RecipeManager::matchRecipes() {
 
                 if (viewFullRecipe == 'y' || viewFullRecipe == 'Y') {
                     displayFullRecipe(recipe);
-                    saveHistory(recipe);
-                }
-            } else if (!missingIngredients.empty()) {
-                // If ingredients are missing, prompt the user to add to the grocery list
-                if (promptCounter < 5) {  // Limit prompts to 5 recipes
-                    std::cout << "You are missing the following ingredients for " << recipe.getRecipeName() << ": ";
-                    for (const auto& ingredient : missingIngredients) {
-                        std::cout << ingredient << " ";
-                    }
-                    std::cout << "\n";
-
-                    char addToGroceryList;
-                    std::cout << "Would you like to add these missing ingredients to a grocery list? (y/n): ";
-                    std::cin >> addToGroceryList;
-                    promptCounter++;
-
-                    if (addToGroceryList == 'y' || addToGroceryList == 'Y') {
-                        generateGroceryList(missingIngredients);
-                    }
+                    return;  // Exit the function after displaying the recipe
+                } else {
+                    std::cout << "Returning to menu...\n";
+                    return;  // Stop iterating once the user declines
                 }
             }
         }
     }
+
+    std::cout << "Sorry, you cannot make any recipes with the ingredients you have.\n";
 }
+
+
+
+// Helper function to write data received from CURL into a string
+size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+    ((std::string*)userp)->append((char*)contents, size * nmemb);
+    return size * nmemb;
+}
+
+// Fetch recipe details from the API
+void fetchRecipeFromAPI(const std::string& recipeName) {
+    const std::string baseUrl = "https://api.edamam.com/api/recipes/v2?type=public&q=";
+    const std::string appId = "d1e22f44";  // Replace with your actual App ID
+    const std::string apiKey = "902a662f52555a094e6aaa17e0e47a37";  // Replace with your actual API key
+
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        std::cerr << "Failed to initialize CURL." << std::endl;
+        return;
+    }
+
+    // Construct URL with escaped recipe name
+    char* escapedRecipeName = curl_easy_escape(curl, recipeName.c_str(), recipeName.length());
+    if (!escapedRecipeName) {
+        std::cerr << "Failed to escape recipe name for URL." << std::endl;
+        curl_easy_cleanup(curl);
+        return;
+    }
+    std::string fullUrl = baseUrl + escapedRecipeName + "&app_id=" + appId + "&app_key=" + apiKey;
+    curl_free(escapedRecipeName);  // Free the memory allocated by curl_easy_escape
+
+    std::string readBuffer;
+    CURLcode res;
+
+    curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+
+    res = curl_easy_perform(curl);
+    if (res != CURLE_OK) {
+        std::cerr << "CURL error: " << curl_easy_strerror(res) << std::endl;
+        curl_easy_cleanup(curl);
+        return;
+    }
+
+    curl_easy_cleanup(curl);
+
+    // Parse the API response
+    try {
+        json response = json::parse(readBuffer);
+
+        if (response.contains("hits") && !response["hits"].empty()) {
+            // Use the first hit
+            auto recipeData = response["hits"][0]["recipe"];
+            std::cout << "Recipe Name: " << recipeData["label"].get<std::string>() << std::endl;
+            std::cout << "Time: " << (recipeData.contains("totalTime") && recipeData["totalTime"].is_number() ? std::to_string(recipeData["totalTime"].get<int>()) + " minutes" : "N/A") << std::endl;
+            std::cout << "Ingredients:\n";
+            for (const auto& ingredient : recipeData["ingredientLines"]) {
+                std::cout << "- " << ingredient.get<std::string>() << std::endl;
+            }
+            std::cout << "Link: " << recipeData["url"].get<std::string>() << std::endl;
+            std::cout << "Nutritional Information:\n";
+            if (recipeData.contains("totalNutrients")) {
+                std::cout << "  Calories: " << recipeData["totalNutrients"]["ENERC_KCAL"]["quantity"].get<double>() << " kcal" << std::endl;
+                std::cout << "  Protein: " << recipeData["totalNutrients"]["PROCNT"]["quantity"].get<double>() << " g" << std::endl;
+                std::cout << "  Fat: " << recipeData["totalNutrients"]["FAT"]["quantity"].get<double>() << " g" << std::endl;
+                std::cout << "  Carbohydrates: " << recipeData["totalNutrients"]["CHOCDF"]["quantity"].get<double>() << " g" << std::endl;
+            } else {
+                std::cout << "  Nutritional information not available." << std::endl;
+            }
+        } else {
+            std::cerr << "Recipe not found in API response." << std::endl;
+        }
+    } catch (const json::parse_error& e) {
+        std::cerr << "JSON parse error: " << e.what() << std::endl;
+    }
+}
+
+
 
 
 void RecipeManager::displayFullRecipe(const Recipe& recipe) {
     std::cout << "Recipe: " << recipe.getRecipeName() << "\n";
+    std::cout << "Category: " << recipe.getType() << "\n";
+
     std::cout << "Ingredients:\n";
     for (const auto& ingredient : recipe.getRequiredIngredients()) {
         std::cout << "- " << ingredient.first << ": " << ingredient.second << "\n";
@@ -248,104 +400,129 @@ void RecipeManager::displayFullRecipe(const Recipe& recipe) {
     for (const auto& step : recipe.getSteps()) {
         std::cout << "- " << step << "\n";
     }
-}
 
-void RecipeManager::saveIngredientsToFile(const std::string& filename) {
-    json j;
-    j["Fridge"] = fridge.toJSON();
-    j["Pantry"] = pantry.toJSON();
+    // Fetch nutritional values from the database
+    sqlite3* db;
+    sqlite3_open(dbName.c_str(), &db);
+    std::string sql = "SELECT Calories, Fat, Protein, Carbohydrates FROM Recipes WHERE Name = ?;";
+    sqlite3_stmt* stmt;
 
-    std::ofstream file(filename);
-    if (file.is_open()) {
-        file << j.dump(4);
-        file.close();
-        std::cout << "Ingredients saved to " << filename << "\n";
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_text(stmt, 1, recipe.getRecipeName().c_str(), -1, SQLITE_STATIC);
+
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            std::cout << "Nutritional Information:\n";
+            std::cout << "Calories: " << sqlite3_column_double(stmt, 0) << "\n";
+            std::cout << "Fat: " << sqlite3_column_double(stmt, 1) << "g\n";
+            std::cout << "Protein: " << sqlite3_column_double(stmt, 2) << "g\n";
+            std::cout << "Carbohydrates: " << sqlite3_column_double(stmt, 3) << "g\n";
+        }
     } else {
-        std::cerr << "Unable to open file " << filename << "\n";
+        std::cerr << "Failed to fetch nutritional values: " << sqlite3_errmsg(db) << std::endl;
     }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
 }
+
 
 void RecipeManager::viewRecipeHistory() {
-    std::ifstream file("../data/history.json");
+    sqlite3* db;
+    sqlite3_open(dbName.c_str(), &db);
 
-    if (!file.is_open()) {
-        std::cerr << "History file does not exist. Initializing history.\n";
-        std::ofstream outfile("../data/history.json");
-        outfile << "[]";  // Empty array
-        outfile.close();
-        return;
-    }
+    std::string sql = "SELECT Name, Date FROM History;";
+    sqlite3_stmt* stmt;
 
-    json history;
-    try {
-        file >> history;
-    } catch (json::parse_error& e) {
-        std::cerr << "Error parsing history file: " << e.what() << "\n";
-        std::cerr << "Resetting history to an empty array.\n";
-        std::ofstream outfile("../data/history.json");
-        outfile << "[]";
-        outfile.close();
-        return;
-    }
-
-    if (!history.is_array()) {
-        std::cerr << "History format is incorrect, resetting history to an empty array.\n";
-        std::ofstream outfile("../data/history.json");
-        outfile << "[]";
-        outfile.close();
-        return;
-    }
-
-    if (history.empty()) {
-        std::cout << "No recipe history found.\n";
-        return;
-    }
-
-    std::cout << "Recipe History:\n";
-    for (size_t i = 0; i < history.size(); ++i) {
-        if (history[i].contains("name") && history[i]["name"].is_string()) {
-            std::cout << i + 1 << ". " << history[i]["name"] << "\n";
-        } else {
-            std::cout << i + 1 << ". Invalid entry in history.\n";
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
+        int count = 1;
+        std::cout << "Recipe History:\n";
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            std::string name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+            std::string date = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            std::cout << count++ << ". " << name << " (Date: " << date << ")\n";
         }
-    }
 
-    int choice;
-    std::cout << "Enter the number of the recipe to view details or 0 to go back to the main menu: ";
-    std::cin >> choice;
-
-    if (choice > 0 && choice <= history.size()) {
-        std::string selectedRecipeName = history[choice - 1]["name"];
-        for (const auto& recipe : recipes) {
-            if (recipe.getRecipeName() == selectedRecipeName) {
-                displayFullRecipe(recipe);
-                break;
-            }
+        if (count == 1) {
+            std::cout << "No recipe history found.\n";
         }
-    } else if (choice == 0) {
-        std::cout << "Returning to the main menu.\n";
     } else {
-        std::cout << "Invalid choice. Returning to the main menu.\n";
+        std::cerr << "Failed to load recipe history: " << sqlite3_errmsg(db) << std::endl;
     }
 
-    file.close();
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
 }
+
 
 void RecipeManager::clearGroceryList() {
-    std::ofstream file("../data/grocery_list.json");
-    if (file.is_open()) {
-        file << "[]";  // clear the grocery list by writting an empty JSON array
-        file.close(); 
+    sqlite3* db;
+    sqlite3_open(dbName.c_str(), &db);
+
+    std::string sql = "DELETE FROM GroceryList;";
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
+        if (sqlite3_step(stmt) == SQLITE_DONE) {
+            std::cout << "Grocery list cleared successfully.\n";
+        } else {
+            std::cerr << "Failed to clear grocery list: " << sqlite3_errmsg(db) << std::endl;
+        }
     } else {
-        std::cerr << "Unable to open grocery list file to clear.\n";
+        std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
     }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
 }
+
+void RecipeManager::checkNotifications() {
+    sqlite3* db;
+    sqlite3_open(dbName.c_str(), &db);
+
+    // Expiring soon query
+    std::string expiringQuery = "SELECT Name, ExpirationDate FROM Storage WHERE Type = 'Fridge' AND ExpirationDate <= date('now', '+3 days');";
+    sqlite3_stmt* stmt;
+
+    std::cout << "Expiring Soon Items:\n";
+    if (sqlite3_prepare_v2(db, expiringQuery.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            std::string name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+            std::string expirationDate = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            std::cout << "- " << name << " (Expires: " << expirationDate << ")\n";
+        }
+    } else {
+        std::cerr << "Failed to fetch expiring items: " << sqlite3_errmsg(db) << std::endl;
+    }
+    sqlite3_finalize(stmt);
+
+    // Running low query
+    std::string lowStockQuery = "SELECT Name, Quantity FROM Storage WHERE Quantity <= 2;";
+    std::cout << "Running Low Items:\n";
+    if (sqlite3_prepare_v2(db, lowStockQuery.c_str(), -1, &stmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            std::string name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+            int quantity = sqlite3_column_int(stmt, 1);
+            std::cout << "- " << name << " (Quantity: " << quantity << ")\n";
+        }
+    } else {
+        std::cerr << "Failed to fetch low-stock items: " << sqlite3_errmsg(db) << std::endl;
+    }
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+}
+
 
 void RecipeManager::menu() {
     int option;
     do {
         std::cout << "What would you like to do?\n";
-        std::cout << "1. Add ingredients and clear grocery list\n2. Generate recipes\n3. View recipe history\n4. Check notifications (expiring soon and running low)\n5. Exit\n";
+        std::cout << "1. Add ingredients and clear grocery list\n";
+        std::cout << "2. Generate recipes\n";
+        std::cout << "3. Use our API (Fetch recipe details)\n";
+        std::cout << "4. View recipe history\n";
+        std::cout << "5. Check notifications (expiring soon and running low)\n";
+        std::cout << "6. Print Grocery List\n";
+        std::cout << "7. Exit\n";
         std::cin >> option;
 
         switch (option) {
@@ -356,19 +533,30 @@ void RecipeManager::menu() {
             case 2:
                 matchRecipes();
                 break;
-            case 3:
+            case 3: {
+                std::cout << "Enter the recipe name: ";
+                std::string recipeName;
+                std::cin.ignore();
+                std::getline(std::cin, recipeName);
+                fetchRecipeFromAPI(recipeName);
+                break;
+            }
+            case 4:
                 viewRecipeHistory();
                 break;
-            case 4:
-                fridge.expiringSoon();
-                pantry.runningLow();
-                break;
             case 5:
+                checkNotifications();
+                break;
+            case 6:
+                printGroceryList();
+                break;
+            case 7:
                 std::cout << "Goodbye!\n";
                 break;
             default:
                 std::cout << "Invalid option. Please try again.\n";
                 break;
         }
-    } while (option != 5);
+    } while (option != 7);  // Exit only on case 7
 }
+
