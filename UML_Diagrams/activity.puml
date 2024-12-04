@@ -1,0 +1,71 @@
+@startuml
+start
+:Display menu with 7 options;
+if (Option 1: Add ingredients and clear grocery list)
+  :Prompt user for ingredient details (name, quantity, storage location, expiration date);
+  :Insert ingredient into "Storage" table;
+  :Clear all items in "GroceryList" table;
+  :Display success message: "Ingredients added and grocery list cleared.";
+  :Go back to menu;
+else if (Option 2: Generate recipes)
+  :Fetch all ingredients from "Storage" table;
+  :call matchRecipes();
+  :Prompt user: Random or Manual selection;
+  if (Random or Manual?) then (Random)
+    :Use all ingredients from "Storage";
+  else (Manual)
+    :Allow user to select specific ingredients;
+  endif
+  :Do you want a (S)weet or (Sa)vory recipe?
+  :Fetch matching recipes from "Recipes" table;
+  if (Recipes found?) then (Yes)
+    :Display recipes;
+    :Prompt user to view recipe details;
+  else (No)
+    :Display message: "No recipes can be made with current ingredients.";
+    :Prompt user to add missing ingredients to grocery list;
+    if (Add to grocery list?) then (Yes)
+      :Add missing ingredients to "GroceryList" table;
+    else (No)
+    endif
+  endif
+  :Go back to menu;
+else if (Option 3: Use our API)
+  :Prompt user for recipe name;
+  :Call external API for recipe details;
+  if (API Response?) then (Success)
+    :Display recipe details;
+  else (Failure)
+    :Display error message;
+  endif
+  :Go back to menu;
+else if (Option 4: View recipe history)
+  :Fetch recipe history from "History" table;
+  if (History available?) then (Yes)
+    :Display recipe history with timestamps;
+  else (No)
+    :Display message: "No recipe history found.";
+  endif
+  :Go back to menu;
+else if (Option 5: Check notifications)
+  :Query "Storage" table for expiring soon items;
+  :Query "Storage" table for running low items;
+  if (Notifications found?) then (Yes)
+    :Display expiring/running low items;
+  else (No)
+    :Display message: "No notifications.";
+  endif
+  :Go back to menu;
+else if (Option 6: Print Grocery List)
+  :Fetch all items from "GroceryList" table;
+  if (Grocery list found?) then (Yes)
+    :Display grocery list items;
+  else (No)
+    :Display message: "Grocery list is empty.";
+  endif
+  :Go back to menu;
+else if (Option 7: Exit)
+  :Display goodbye message;
+  stop
+endif
+@enduml
