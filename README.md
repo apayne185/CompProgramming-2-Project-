@@ -1,11 +1,3 @@
-NEW STEPS - ANNA
-to run:
-   - mkdir build
-   - cd build
-   - cmake ..      #this reads cmakelists.txt from root directory (..) and generates the necessary files for the build system
-   - cmake --build .        #builds the project 
-   - .\RecipeManagerExecutable       #run the executable 
-
 
 notes: 
    - CMakeCache.txt, cmake_install.cmake, etc are automatically created and included in gitignore
@@ -73,25 +65,46 @@ The main features of our program consist of:
 
 ### Installation and Setup
 
+Here’s the updated text for your README file:
+
+Installation and Setup
+
 To install and run the Recipe Manager locally:
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/ayayasminebelloum/CompProgramming-2-Project.git
-   ```
-2. Navigate to the project directory:
-   ```bash
-   cd CompProgramming-2-Project
-   ```
-3. Compile the program using the provided `finalcode.cpp`:
-   ```bash
-   g++ -std=c++11 main.cpp -o finalcode
-   ```
-4. Ensure that the required JSON files (`storage.json`, `recipes.json`, and `history.json`) are in the same directory as the executable.
-5. Run the program:
-   ```bash
-   ./finalcode
-   ```
+	1.	Clone the repository:
+
+git clone https://github.com/apayne185/CompProgramming-2-Project.git
+
+
+	2.	Navigate to the project directory:
+
+cd CompProgramming-2-Project
+
+
+	3.	Create a build directory:
+
+mkdir build
+
+
+	4.	Navigate into the build directory:
+
+cd build
+
+
+	5.	Run CMake to generate the necessary build system files:
+
+cmake ..
+
+This reads the CMakeLists.txt from the root directory and prepares the build system.
+
+	6.	Build the project:
+
+cmake --build .
+
+	7.	Run the executable:
+
+./RecipeManagerExecutable
+
 
 ---
 
