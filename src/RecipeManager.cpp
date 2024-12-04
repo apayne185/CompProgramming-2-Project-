@@ -349,8 +349,17 @@ void fetchRecipeFromAPI(const std::string& recipeName) {
         std::cerr << "CURL error: " << curl_easy_strerror(res) << std::endl;
         curl_easy_cleanup(curl);
         return;
+    } else {
+      try {
+        auto jsonResponse = nlohmann::json::parse(readBuffer);
+        if (jsonResponse.contains("hits") && !jsonResponse["hits"].empty()) {
+          std::cout << "Recipe details located. \n";
+        } else { std::cout<< "No recipes found for " << recipeName << ".\n";
+          }
+      } catch (const nlohmann::json::parse_error& e) {
+          std::cerr << "Failed to parse JSON response: " << e.what() << std::endl;
+      }
     }
-
     curl_easy_cleanup(curl);
 
     // Parse the API response
