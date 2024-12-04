@@ -2,48 +2,40 @@
 #define RECIPEMANAGER_H
 
 #include <iostream>
-#include <fstream>
 #include <vector>
 #include <ctime>
 #include <algorithm>
 #include "Fridge.h"
 #include "Pantry.h"
 #include "Recipe.h"
-#include "json.hpp"
 #include "Ingredient.h"
-
-using json = nlohmann::json;
 
 class RecipeManager {
 private:
-    Fridge fridge;
-    Pantry pantry;
-    std::vector<Recipe> recipes;
+    std::string dbName;              // Database file name
+    Fridge fridge;                   // Fridge object
+    Pantry pantry;                   // Pantry object
+    std::vector<Recipe> recipes;     // List of recipes
 
-    void saveHistory(const Recipe& recipe);
-    void displayFullRecipe(const Recipe& recipe);
-    void saveIngredientsToFile(const std::string& filename);
+    void loadRecipesFromDatabase();          // Load recipes from the database
+    void loadIngredientsFromDatabase();      // Load ingredients from the database
+    void saveHistory(const Recipe& recipe);  // Save recipe history to the database
+    void displayFullRecipe(const Recipe& recipe);  // Display full recipe details
 
 public:
-    // Getter functions for accessing fridge and pantry
-    const Fridge& getFridge() {
-        return fridge;
-    }
-
-    const Pantry& getPantry() {
-        return pantry;
-    }
-
     // Constructor
-    RecipeManager(const std::string& recipeFilename);
+    RecipeManager(const std::string& dbName);
+
     // Member functions
-    void loadIngredientsFromFile(const std::string& filename);
-    void collectIngredients();
-    void generateGroceryList(const std::vector<std::string>& missingIngredients);
-    void matchRecipes();
-    void viewRecipeHistory();
-    void clearGroceryList();
-    void menu();
+    void collectIngredients();                             // Collect ingredients from user input
+    void generateGroceryList(const std::vector<std::string>& missingIngredients);  // Generate a grocery list
+    void matchRecipes();                                   // Match available ingredients to recipes
+    void viewRecipeHistory();                              // View saved recipe history
+    void clearGroceryList();                               // Clear the grocery list
+    void printGroceryList();                               // Print the grocery list
+    void checkNotifications();                             // Check for expiring/low ingredients
+    void fetchAndSaveRecipeDetails(const std::string& recipeName);  // Fetch and save recipe details via API
+    void menu();                                           // Display the menu for user interaction
 };
 
 #endif
