@@ -1,4 +1,6 @@
 #include <string>
+#include <stdexcept>
+#include <iostream>
 #include "../include/json.hpp"
 using json = nlohmann::json;  
 #include "../include/Ingredient.h"
@@ -19,7 +21,15 @@ using json = nlohmann::json;
     }
 
     Ingredient Ingredient::fromJSON(const json& j) {
+    try {
+        if (!j.contains("name") || !j.contains("quantity")) {
+            throw std::runtime_error("JSON missing required fields: name or quantity");
+        }
         return Ingredient(j["name"], j["quantity"], j.value("expirationDate", ""));
+    } catch (const std::exception& e) {
+        std::cerr << "Error creating ingredient from JSON: " << e.what() << std::endl;
+        return Ingredient(); // Return a default-constructed Ingredient in case of error
     }
+}
 
 

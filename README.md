@@ -7,13 +7,6 @@ to run:
    - .\RecipeManagerExecutable       #run the executable 
 
 
-changes made: 
-   - removed all classes from finalcode.cpp (changed name to main.cpp)
-   - remodeled the structure of the project (src, include, json(files for nlohmann_json), data)
-   - wrote the correct paths of internal files in the project into the src files
-   - wrote CMakeLists.txt & gitignore files
-   - ensured there are standards that both our computers can use, please test this
-
 notes: 
    - CMakeCache.txt, cmake_install.cmake, etc are automatically created and included in gitignore
    - cmake-build-debug & CMakeFiles folders are created when you run cmake .., do not delete them but they will be included in the gitignore. If you for some reason delete build, delete these too then. 
@@ -23,20 +16,16 @@ notes:
 future updates/comments
 
 Within Code
-   - we need basic error handling for catching issues in recipemanager.cpp. If something fails in this file, we need to know where and if it was failing due to an external .h file
-   - be mindful of your automatically generated files for macos/vscode/clang. Check which ones should be in gitignore
-   - leave VC to github commits. No more repeat files. This will not work on CMake or in general (no 200 line commits)
-   - Working polyphirsm 
-   - Casting - which is converting data types? why would this be essential? (you originally said casking but thats not a c programming term to my knowledge)
-   - Memory management (& rule of 3 and 5 - handles memory leaks, dangling pointers, efficient transfers)
-   - Performance (benchmarks/timers to analyze)
+   - recipemanager.cpp error handling 
+   - Memory management (& rule of 3 and 5 - handles memory leaks, dangling pointers, efficient transfers, smart pointers) --> Makenna
+   - Integrating database API into our classes
+   - integration testing for sqlite database
 
 Within Documentation
    - UML - diagrams 
       - structural diagrams (class, components, deployment diagrams)
-      - behavioral diagrams (use cases, sequence interactions, activity diagrams)
-   - Performance Analysis 
-   - Challenges 
+   - FINISH README 
+
       
 
 
