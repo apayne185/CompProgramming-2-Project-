@@ -65,12 +65,11 @@ The main features of our program consist of:
 
 ### Installation and Setup
 
-Here’s the updated text for your README file:
+The updated code section for your README should be adjusted to align with the corrections you need. Here’s the revised text:
 
 Installation and Setup
 
 To install and run the Recipe Manager locally:
-
 	1.	Clone the repository:
 
 git clone https://github.com/apayne185/CompProgramming-2-Project.git
@@ -95,16 +94,16 @@ cd build
 
 cmake ..
 
-This reads the CMakeLists.txt from the root directory and prepares the build system.
+	•	This reads the CMakeLists.txt file from the root directory and prepares the build system.
 
 	6.	Build the project:
 
 cmake --build .
 
+
 	7.	Run the executable:
 
 ./RecipeManagerExecutable
-
 
 ---
 
